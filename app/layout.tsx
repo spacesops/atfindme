@@ -3,6 +3,8 @@ import { Chrome } from "@/components/Chrome";
 import { siteName } from "@/lib/site";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 export function generateMetadata(): Metadata {
   const name = siteName();
   return {

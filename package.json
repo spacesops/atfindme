@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node scripts/listen.mjs dev",
     "build": "next build",
-    "start": "node scripts/listen.mjs start"
+    "start": "node scripts/listen.mjs start",
+    "serve": "node scripts/listen.mjs serve"
   },
   "dependencies": {
     "@spacesprotocol/fabric-web": "^0.2.11",

@@ -42,12 +42,19 @@ cd atfindme
 cp .env.example .env.local
 # set SPACED_ENABLED=true and SPACED_RPC_* if you have a local spaced node
 npm install
-npm run dev
+npm run serve
 ```
 
-Open [http://localhost:3000](http://localhost:3000) or [http://localhost:3000/andrew@lunde](http://localhost:3000/andrew@lunde).
+`npm run serve` stops any previous atfindme/Next process for this repo, reads `HOST`/`PORT` from the env files (defaults `127.0.0.1:3000`), rebuilds, then starts in production mode.
 
-Do not use `npm run dev` on a public server.
+| Script | What it does |
+|---|---|
+| `npm run serve` | Kill leftovers, rebuild, `next start` on `HOST`:`PORT`. |
+| `npm run dev` | Kill leftovers, then `next dev` (hot reload). Do not use on a public server. |
+| `npm run build` | Production build only. |
+| `npm start` | Kill leftovers, then `next start` (fails if you have not built). |
+
+Open [http://localhost:3000](http://localhost:3000) or [http://localhost:3000/andrew@lunde](http://localhost:3000/andrew@lunde).
 
 ## Remote server (production)
 
@@ -145,7 +152,7 @@ Group=atfindme
 WorkingDirectory=/opt/atfindme/app
 Environment=NODE_ENV=production
 EnvironmentFile=-/opt/atfindme/app/.env.production
-ExecStart=/usr/bin/npm start
+ExecStart=/usr/bin/npm run serve
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
@@ -214,7 +221,11 @@ Do **not** expose spaced RPC (7225), certrelay’s bind if it is loopback-only, 
 ```bash
 curl -sSI https://atfindme.example.com/
 curl -sS "https://atfindme.example.com/api/resolve?q=andrew@lunde" | head
+curl -sS "https://atfindme.example.com/andrew@lunde?format=json"
+curl -sS -H 'Accept: application/json' https://atfindme.example.com/andrew@lunde
 ```
+
+JSON is `200` when found, `404` if missing, `400` if the query is not a handle, `503` if certrelay lookup failed. A browser `Accept` still gets HTML.
 
 In a browser: open the homepage (rationale, search, directory links), then a handle such as `/andrew@lunde`.
 

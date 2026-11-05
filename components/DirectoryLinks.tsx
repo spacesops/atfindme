@@ -1,6 +1,8 @@
+import { connection } from "next/server";
 import { listDirectory } from "@/lib/directory";
 
 export async function DirectoryLinks() {
+  await connection();
   try {
     const { entries, relay } = await listDirectory();
     const host = relay.replace(/^https?:\/\//, "");
@@ -27,7 +29,8 @@ export async function DirectoryLinks() {
       </div>
     );
   } catch (err) {
-    console.warn("[directory]", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[directory]", msg);
     return (
       <div className="dirlist" role="alert">
         <span className="dir-err">Could not load directory listing.</span>

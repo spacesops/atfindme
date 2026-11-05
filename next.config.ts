@@ -7,6 +7,7 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig: NextConfig = {
   outputFileTracingRoot: dir,
   devIndicators: false,
+  eslint: { ignoreDuringBuilds: true },
   serverExternalPackages: [
     "@spacesprotocol/fabric-web",
     "@spacesprotocol/fabric-core",

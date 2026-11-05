@@ -23,3 +23,12 @@ export function randomCertrelay(): string {
   const seeds = certrelaySeeds();
   return seeds[Math.floor(Math.random() * seeds.length)]!;
 }
+
+export function shuffledCertrelays(): string[] {
+  const seeds = [...certrelaySeeds()];
+  for (let i = seeds.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [seeds[i], seeds[j]] = [seeds[j]!, seeds[i]!];
+  }
+  return seeds;
+}

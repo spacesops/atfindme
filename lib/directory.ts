@@ -2,7 +2,7 @@ import "server-only";
 
 import { resolveZoneJson } from "./fabric";
 import { parseRecords } from "./parse";
-import { randomCertrelay } from "./relays";
+import { shuffledCertrelays } from "./relays";
 import type { SipRecord } from "./types";
 
 export type DirectoryEntry = {
@@ -17,6 +17,8 @@ type AddrsResponse = {
 };
 
 const CACHE_MS = 5 * 60 * 1000;
+const ADDRS_MS = 8_000;
+const ZONE_MS = 25_000;
 let cache: { at: number; entries: DirectoryEntry[]; relay: string } | null = null;
 
 function websiteFromRecords(records: SipRecord[]): string | null {
@@ -29,12 +31,23 @@ function websiteFromRecords(records: SipRecord[]): string | null {
   return null;
 }
 
+function errText(err: unknown): string {
+  if (err && typeof err === "object" && "cause" in err) {
+    const cause = (err as { cause?: unknown }).cause;
+    if (cause && typeof cause === "object" && "code" in cause) {
+      return String((cause as { code?: string }).code ?? err);
+    }
+  }
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
 async function fetchDirectoryHandles(relay: string): Promise<string[]> {
   const url = `${relay}/addrs?${new URLSearchParams({ name: "service-type", addr: "directory" })}`;
   const res = await fetch(url, {
     headers: { accept: "application/json", "user-agent": "atfindme" },
     cache: "no-store",
-    signal: AbortSignal.timeout(12_000),
+    signal: AbortSignal.timeout(ADDRS_MS),
   });
   if (!res.ok) {
     throw new Error(`directory query failed (${res.status})`);
@@ -46,9 +59,30 @@ async function fetchDirectoryHandles(relay: string): Promise<string[]> {
   return [...new Set(handles)].slice(0, 25);
 }
 
-async function lookupWebsite(handle: string): Promise<DirectoryEntry> {
+async function firstWorkingAddrs(): Promise<{ relay: string; handles: string[] }> {
+  const seeds = shuffledCertrelays();
+  const failures: string[] = [];
+  const result = await Promise.any(
+    seeds.map(async (relay) => {
+      try {
+        const handles = await fetchDirectoryHandles(relay);
+        return { relay, handles };
+      } catch (err) {
+        const msg = `${relay}: ${errText(err)}`;
+        failures.push(msg);
+        throw new Error(msg);
+      }
+    }),
+  ).catch(() => null);
+  if (!result) {
+    throw new Error(`directory query failed on all relays (${failures.join("; ") || "timeout"})`);
+  }
+  return result;
+}
+
+async function lookupWebsite(handle: string, relay: string): Promise<DirectoryEntry> {
   try {
-    const zone = await resolveZoneJson(handle);
+    const zone = await resolveZoneJson(handle, { seeds: [relay], timeoutMs: ZONE_MS });
     if (!zone) {
       return { handle, website: null, error: `${handle}: handle not found` };
     }
@@ -59,7 +93,7 @@ async function lookupWebsite(handle: string): Promise<DirectoryEntry> {
     }
     return { handle, website, error: null };
   } catch (err) {
-    console.warn("[directory] resolve failed", handle, err);
+    console.warn("[directory] resolve failed", handle, errText(err));
     return { handle, website: null, error: `${handle}: lookup failed` };
   }
 }
@@ -68,9 +102,8 @@ export async function listDirectory(): Promise<{ entries: DirectoryEntry[]; rela
   if (cache && Date.now() - cache.at < CACHE_MS) {
     return { entries: cache.entries, relay: cache.relay };
   }
-  const relay = randomCertrelay();
-  const handles = await fetchDirectoryHandles(relay);
-  const entries = await Promise.all(handles.map(lookupWebsite));
+  const { relay, handles } = await firstWorkingAddrs();
+  const entries = await Promise.all(handles.map((h) => lookupWebsite(h, relay)));
   cache = { at: Date.now(), entries, relay };
   return { entries, relay };
 }

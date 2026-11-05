@@ -14,13 +14,17 @@ function parseStdout(stdout: string): Record<string, unknown> | null {
   return JSON.parse(json) as Record<string, unknown>;
 }
 
-export async function resolveZoneJson(handle: string): Promise<Record<string, unknown> | null> {
+export async function resolveZoneJson(
+  handle: string,
+  opts?: { seeds?: string[]; timeoutMs?: number },
+): Promise<Record<string, unknown> | null> {
   const script = path.join(process.cwd(), "scripts/resolve-handle.mjs");
   const env: NodeJS.ProcessEnv = { ...process.env };
+  if (opts?.seeds?.length) env.FABRIC_SEEDS = opts.seeds.join(",");
   try {
     const { stdout } = await execFileAsync(process.execPath, [script, handle], {
       env,
-      timeout: 45_000,
+      timeout: opts?.timeoutMs ?? 45_000,
       maxBuffer: 12 * 1024 * 1024,
     });
     return parseStdout(stdout);

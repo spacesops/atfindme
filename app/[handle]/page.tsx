@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { CopyButton, CopyChip, ShareButton } from "@/components/CopyChip";
 import { HandleSkeleton } from "@/components/HandleSkeleton";
+import { TryAgainButton } from "@/components/TryAgainButton";
 import { PayBlock } from "@/components/PayBlock";
 import { RecordsPanel } from "@/components/RecordsPanel";
 import { lookupHandle } from "@/lib/lookup";
@@ -61,6 +62,7 @@ async function HandleResult({ handle }: { handle: string }) {
             We couldn’t find this handle. It may be unregistered, or the relay has not seen it yet.
             {profile.error ? ` ${profile.error}` : ""}
           </p>
+          <TryAgainButton />
         </div>
       </div>
     );
@@ -137,7 +139,7 @@ async function HandleResult({ handle }: { handle: string }) {
         </aside>
         <div className="main">
           <RecordsPanel records={profile.records} />
-          {profile.fallback_records.length ? (
+          {profile.spacedEnabled && profile.fallback_records.length ? (
             <>
               <p className="fb-h">On-chain fallback</p>
               <RecordsPanel records={profile.fallback_records} />

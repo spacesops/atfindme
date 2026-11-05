@@ -46,8 +46,8 @@ export async function lookupHandle(raw: string): Promise<HandleProfile> {
   let script_pubkey = toHex(zoneJson.script_pubkey ?? zoneJson.scriptPubkey);
   const anchor = extractAnchor(zoneJson);
 
-  let fallback_records: SipRecord[] = parseRecords(zoneJson.fallback_records);
   const useSpaced = spacedEnabled();
+  let fallback_records: SipRecord[] = useSpaced ? parseRecords(zoneJson.fallback_records) : [];
   if (useSpaced) {
     const subjects = [num_id, handle].filter((s): s is string => Boolean(s));
     for (const subject of subjects) {
