@@ -1,10 +1,10 @@
 # atfindme
 
-Look up [Spaces protocol](https://spacesprotocol.org) handles. Live records come from a mesh of [certrelay](https://github.com/spacesprotocol/certrelay) servers via `@spacesprotocol/fabric-web`. Num alias, public key, and on-chain fallback come from a **spaced** JSON-RPC when one is reachable.
+Look up [Spaces protocol](https://spacesprotocol.org) handles. Live records come from a mesh of [certrelay](https://github.com/spacesprotocol/certrelay) servers via `@spacesprotocol/fabric-web`. On-chain num, alias, and fallback from a **spaced** JSON-RPC node are optional (`SPACED_ENABLED`).
 
 The site is meant to be run as many independent instances. They all fetch the same kind of data; compare a handle across instances listed in the header if you want to confirm that no particular host has been compromised.
 
-Fabric resolve runs in a Node child process (`scripts/resolve-handle.mjs`) so WASM libveritas is not bundled by Next.js. If spaced is down, fabric records still render and alias/fallback are omitted.
+Fabric resolve runs in a Node child process (`scripts/resolve-handle.mjs`) so WASM libveritas is not bundled by Next.js. If spaced is disabled or unreachable, fabric records still render and the profile notes that only certrelays were queried.
 
 ## Requirements
 
@@ -29,7 +29,8 @@ Copy `.env.example` and fill in values. Next.js loads `.env`, `.env.local`, `.en
 | `NEXT_PUBLIC_SITE_NAME` | **build time** | Brand in the UI (default `@FindMe`). Change this, then rebuild. |
 | `FABRIC_SEEDS` | runtime | Comma-separated certrelay URLs. Unset uses public seeds (`relay-cosmos`, `relay-atlas`, `relay-orion`, `relay-pulsar` on `spacesprotocol.org`). |
 | `FABRIC_DEV_MODE` | runtime | `true` skips work-depth checks (local relay that is not finalized). Leave unset in production. |
-| `SPACED_RPC_URL` | runtime | Default `http://127.0.0.1:7225`. Use `127.0.0.1`, not `0.0.0.0`. |
+| `SPACED_ENABLED` | runtime | `false` / `0` / `off` / `no` skips spaced entirely (certrelay only). Unset or `true` queries spaced when `SPACED_RPC_URL` is set. |
+| `SPACED_RPC_URL` | runtime | Default unset. Use `http://127.0.0.1:7225` — `127.0.0.1`, not `0.0.0.0`. Ignored when spaced is disabled. |
 | `SPACED_RPC_USER` / `SPACED_RPC_PASSWORD` | runtime | HTTP Basic auth for spaced. |
 | `SPACED_CHAIN` | runtime | `mainnet` (documented for operators; spaced itself is configured on the node). |
 
@@ -39,7 +40,7 @@ Copy `.env.example` and fill in values. Next.js loads `.env`, `.env.local`, `.en
 git clone git@spacesops-github:spacesops/atfindme.git   # or your fork
 cd atfindme
 cp .env.example .env.local
-# set SPACED_RPC_USER / SPACED_RPC_PASSWORD if you have a local spaced node
+# set SPACED_ENABLED=true and SPACED_RPC_* if you have a local spaced node
 npm install
 npm run dev
 ```
@@ -102,9 +103,7 @@ A typical public instance:
 NEXT_PUBLIC_SITE_NAME=@FindMe
 HOST=127.0.0.1
 PORT=3000
-SPACED_RPC_URL=http://127.0.0.1:7225
-SPACED_RPC_USER=your-spaced-user
-SPACED_RPC_PASSWORD=a-long-random-password
+SPACED_ENABLED=false
 SPACED_CHAIN=mainnet
 ```
 
@@ -116,7 +115,7 @@ FABRIC_SEEDS=https://relay-atlas.spacesprotocol.org,https://relay.example.com
 
 `NEXT_PUBLIC_SITE_NAME` is inlined at `npm run build`. After changing it, rebuild and restart.
 
-If this host has no spaced node, you can still run the site: omit or ignore the `SPACED_RPC_*` values. Lookups then come from certrelay only.
+If this host has no spaced node, set `SPACED_ENABLED=false` (or omit `SPACED_RPC_URL`). Lookups then come from certrelay only; the profile page says additional information may be available on-chain.
 
 ### 5. Install dependencies and build
 
@@ -243,7 +242,7 @@ curl -sS "https://relay-cosmos.spacesprotocol.org/addrs?name=service-type&addr=d
 
 ### Optional: spaced on the same host
 
-Point `SPACED_RPC_URL` at `http://127.0.0.1:7225` and set the same Basic-auth user/password the node uses. Bind spaced’s RPC to localhost (or to `0.0.0.0` only on a private network, and still use `127.0.0.1` in atfindme — the app rewrites `0.0.0.0` to `127.0.0.1`). Restart atfindme after changing `.env.production` (no rebuild needed for `SPACED_*`).
+Set `SPACED_ENABLED=true`, point `SPACED_RPC_URL` at `http://127.0.0.1:7225`, and use the same Basic-auth user/password the node uses. Bind spaced’s RPC to localhost (or to `0.0.0.0` only on a private network, and still use `127.0.0.1` in atfindme — the app rewrites `0.0.0.0` to `127.0.0.1`). Restart atfindme after changing `.env.production` (no rebuild needed for `SPACED_*`).
 
 ### Optional: nginx instead of Caddy
 

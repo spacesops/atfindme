@@ -22,5 +22,6 @@ export type HandleProfile = {
   payLabel?: string;
   payQr?: string;
   isBolt12?: boolean;
+  spacedEnabled?: boolean;
   error?: string;
 };

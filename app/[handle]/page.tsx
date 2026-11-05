@@ -145,8 +145,9 @@ async function HandleResult({ handle }: { handle: string }) {
           ) : null}
           <div className="mainfoot">
             <p className="pnote">
-              Records were resolved with fabric against certrelay and checked against this host’s spaced
-              node when it was reachable.
+              {profile.spacedEnabled
+                ? "Records were resolved with fabric against certrelay and checked against this host’s spaced node when it was reachable."
+                : "Only certrelays were queried. Additional information may be available on-chain."}
             </p>
           </div>
         </div>

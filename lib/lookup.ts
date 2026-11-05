@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { resolveZoneJson } from "./fabric";
 import { extractAnchor, isValidHandle, normalizeQuery, parseRecords, toHex } from "./parse";
 import { pickPay } from "./records";
-import { getFallback, getNum } from "./spaced";
+import { getFallback, getNum, spacedEnabled } from "./spaced";
 import type { HandleProfile, SipRecord } from "./types";
 
 export async function lookupHandle(raw: string): Promise<HandleProfile> {
@@ -47,21 +47,24 @@ export async function lookupHandle(raw: string): Promise<HandleProfile> {
   const anchor = extractAnchor(zoneJson);
 
   let fallback_records: SipRecord[] = parseRecords(zoneJson.fallback_records);
-  const subjects = [num_id, handle].filter((s): s is string => Boolean(s));
-  for (const subject of subjects) {
-    try {
-      const num = await getNum(subject);
-      if (num) {
-        alias = alias || num.alias;
-        script_pubkey = script_pubkey || num.script_pubkey;
-        if (!fallback_records.length && num.records.length) fallback_records = num.records;
+  const useSpaced = spacedEnabled();
+  if (useSpaced) {
+    const subjects = [num_id, handle].filter((s): s is string => Boolean(s));
+    for (const subject of subjects) {
+      try {
+        const num = await getNum(subject);
+        if (num) {
+          alias = alias || num.alias;
+          script_pubkey = script_pubkey || num.script_pubkey;
+          if (!fallback_records.length && num.records.length) fallback_records = num.records;
+        }
+        if (!fallback_records.length) {
+          fallback_records = await getFallback(subject);
+        }
+        if (fallback_records.length) break;
+      } catch (err) {
+        console.warn("[spaced] enrich failed", err);
       }
-      if (!fallback_records.length) {
-        fallback_records = await getFallback(subject);
-      }
-      if (fallback_records.length) break;
-    } catch (err) {
-      console.warn("[spaced] enrich failed", err);
     }
   }
 
@@ -77,6 +80,7 @@ export async function lookupHandle(raw: string): Promise<HandleProfile> {
     alias,
     script_pubkey,
     anchor,
+    spacedEnabled: useSpaced,
   };
 
   const pay = pickPay(records);
@@ -112,5 +116,6 @@ export function toApiJson(profile: HandleProfile) {
     script_pubkey: profile.script_pubkey,
     anchor: profile.anchor,
     error: profile.error,
+    spaced_enabled: profile.spacedEnabled ?? false,
   };
 }

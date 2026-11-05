@@ -8,6 +8,21 @@ type JsonRpcResult = {
   error?: { code?: number; message?: string };
 };
 
+function truthy(value: string | undefined): boolean | null {
+  if (value === undefined) return null;
+  const v = value.trim().toLowerCase();
+  if (!v) return null;
+  if (["0", "false", "off", "no"].includes(v)) return false;
+  if (["1", "true", "on", "yes"].includes(v)) return true;
+  return null;
+}
+
+/** On-chain spaced JSON-RPC. Off when SPACED_ENABLED is false, or when no SPACED_RPC_URL is set. */
+export function spacedEnabled(): boolean {
+  if (truthy(process.env.SPACED_ENABLED) === false) return false;
+  return Boolean(rpcUrl());
+}
+
 function rpcUrl(): string | null {
   const url = process.env.SPACED_RPC_URL?.trim();
   if (!url) return null;
@@ -22,6 +37,7 @@ function authHeader(): string | undefined {
 }
 
 export async function spacedRpc<T>(method: string, params: unknown[] = []): Promise<T | null> {
+  if (!spacedEnabled()) return null;
   const url = rpcUrl();
   if (!url) return null;
   const headers: Record<string, string> = { "content-type": "application/json" };
