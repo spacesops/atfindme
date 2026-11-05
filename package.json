@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/listen.mjs dev",
     "build": "next build",
-    "start": "next start"
+    "start": "node scripts/listen.mjs start"
   },
   "dependencies": {
     "@spacesprotocol/fabric-web": "^0.2.11",

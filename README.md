@@ -24,6 +24,8 @@ Copy `.env.example` and fill in values. Next.js loads `.env`, `.env.local`, `.en
 
 | Env | When it is read | Meaning |
 |---|---|---|
+| `HOST` | runtime | Bind IP for `npm run dev` / `npm start` (default `127.0.0.1`). `HOST_IP` and `HOSTNAME` are aliases. |
+| `PORT` | runtime | Bind port (default `3000`). `HOST_PORT` is an alias. Keep the reverse proxy in sync if you change this. |
 | `NEXT_PUBLIC_SITE_NAME` | **build time** | Brand in the UI (default `@FindMe`). Change this, then rebuild. |
 | `FABRIC_SEEDS` | runtime | Comma-separated certrelay URLs. Unset uses public seeds (`relay-cosmos`, `relay-atlas`, `relay-orion`, `relay-pulsar` on `spacesprotocol.org`). |
 | `FABRIC_DEV_MODE` | runtime | `true` skips work-depth checks (local relay that is not finalized). Leave unset in production. |
@@ -98,6 +100,8 @@ A typical public instance:
 
 ```
 NEXT_PUBLIC_SITE_NAME=@FindMe
+HOST=127.0.0.1
+PORT=3000
 SPACED_RPC_URL=http://127.0.0.1:7225
 SPACED_RPC_USER=your-spaced-user
 SPACED_RPC_PASSWORD=a-long-random-password
@@ -126,7 +130,7 @@ Confirm `.next` was created and the build finished without errors. The first fab
 
 ### 6. systemd unit
 
-Listen only on loopback. Caddy (or nginx) terminates TLS and proxies to port 3000.
+Listen on `HOST`/`PORT` from `.env.production` (defaults `127.0.0.1:3000`). Caddy (or nginx) terminates TLS and proxies to that address.
 
 ```bash
 sudo tee /etc/systemd/system/atfindme.service >/dev/null <<'EOF'
@@ -141,10 +145,8 @@ User=atfindme
 Group=atfindme
 WorkingDirectory=/opt/atfindme/app
 Environment=NODE_ENV=production
-Environment=PORT=3000
-Environment=HOSTNAME=127.0.0.1
 EnvironmentFile=-/opt/atfindme/app/.env.production
-ExecStart=/usr/bin/npx next start --hostname 127.0.0.1 --port 3000
+ExecStart=/usr/bin/npm start
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
@@ -169,7 +171,7 @@ curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/
 journalctl -u atfindme -f
 ```
 
-You should see `200`. If the service cannot find `next`, use the absolute path from `sudo -u atfindme npm prefix -g` or set `ExecStart=/usr/bin/node /opt/atfindme/app/node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000`.
+You should see `200`. Point Caddy/nginx at the same `HOST` and `PORT` as `.env.production`. If the service cannot find `npm`/`next`, set `ExecStart=/usr/bin/node /opt/atfindme/app/scripts/listen.mjs start`.
 
 ### 7. Reverse proxy and TLS (Caddy)
 
