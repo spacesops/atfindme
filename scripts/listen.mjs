@@ -40,7 +40,15 @@ if (mode === "dev") {
   loadEnvFile(".env.local");
 }
 
-const host = (process.env.HOST || process.env.HOST_IP || process.env.HOSTNAME || "127.0.0.1").trim();
+function bindHost() {
+  const explicit = (process.env.HOST || process.env.HOST_IP || "").trim();
+  if (explicit) return explicit;
+  const hn = process.env.HOSTNAME?.trim() ?? "";
+  if (hn && /^(localhost|[\d.]+|\[[\da-f:.]+\])$/i.test(hn)) return hn;
+  return "127.0.0.1";
+}
+
+const host = bindHost();
 const port = (process.env.PORT || process.env.HOST_PORT || "3000").trim();
 const env = { ...process.env, HOST: host, HOSTNAME: host, PORT: port, NODE_ENV: mode === "dev" ? process.env.NODE_ENV : "production" };
 

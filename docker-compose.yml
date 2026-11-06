@@ -1,0 +1,23 @@
+services:
+  atfindme:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-@FindMe}
+    image: atfindme:local
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: ${PORT:-3000}
+      NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-@FindMe}
+      FABRIC_SEEDS: ${FABRIC_SEEDS:-}
+      FABRIC_DEV_MODE: ${FABRIC_DEV_MODE:-}
+      SPACED_ENABLED: ${SPACED_ENABLED:-false}
+      SPACED_RPC_URL: ${SPACED_RPC_URL:-}
+      SPACED_RPC_USER: ${SPACED_RPC_USER:-}
+      SPACED_RPC_PASSWORD: ${SPACED_RPC_PASSWORD:-}
+      SPACED_CHAIN: ${SPACED_CHAIN:-mainnet}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

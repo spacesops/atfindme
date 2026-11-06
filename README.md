@@ -56,6 +56,32 @@ npm run serve
 
 Open [http://localhost:3000](http://localhost:3000) or [http://localhost:3000/andrew@lunde](http://localhost:3000/andrew@lunde).
 
+## Docker
+
+The image runs `node scripts/listen.mjs start` (same runtime env as `npm start`). Bind defaults to `0.0.0.0:3000` so published ports work. Pass the same variables as `.env.example`; do not bake secrets into the image.
+
+`NEXT_PUBLIC_SITE_NAME` is inlined at **image build**. Change it with `--build-arg` (or the Compose `build.args` entry) and rebuild. All other keys (`HOST`, `PORT`, `FABRIC_*`, `SPACED_*`) are read at container start.
+
+```bash
+docker build -t atfindme \
+  --build-arg NEXT_PUBLIC_SITE_NAME=@FindMe \
+  .
+
+docker run --rm --name atfindme \
+  --env-file .env \
+  -e HOST=0.0.0.0 \
+  -p 3000:3000 \
+  atfindme
+```
+
+Compose (interpolates a project `.env` for `${…}` and still forces `HOST=0.0.0.0`):
+
+```bash
+docker compose up --build
+```
+
+If spaced runs on the Docker host, use `SPACED_RPC_URL=http://host.docker.internal:7225` (Compose already adds `host.docker.internal`). Do not use `127.0.0.1` for spaced from inside the container — that is the container itself.
+
 ## Remote server (production)
 
 These steps assume Ubuntu 22.04 or 24.04, a dedicated unprivileged user, systemd, and [Caddy](https://caddyserver.com) for TLS. Nginx is noted at the end as an alternative.
