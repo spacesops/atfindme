@@ -21,7 +21,8 @@ WORKDIR /app
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates lsof procps \
   && rm -rf /var/lib/apt/lists/* \
-  && useradd --system --uid 1001 --create-home --home-dir /app atfindme
+  && useradd --system --uid 1001 --create-home --home-dir /app atfindme \
+  && chown atfindme:atfindme /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -31,7 +32,7 @@ ENV NEXT_PUBLIC_SITE_NAME=@FindMe
 ENV SPACED_ENABLED=false
 ENV SPACED_CHAIN=mainnet
 
-COPY --from=build --chown=atfindme:atfindme /app/package.json /app/package-lock.json /app/next.config.ts /app/tsconfig.json ./
+COPY --from=build --chown=atfindme:atfindme /app/package.json /app/package-lock.json /app/next.config.mjs /app/tsconfig.json ./
 COPY --from=build --chown=atfindme:atfindme /app/node_modules ./node_modules
 COPY --from=build --chown=atfindme:atfindme /app/.next ./.next
 COPY --from=build --chown=atfindme:atfindme /app/scripts ./scripts
