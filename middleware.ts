@@ -1,4 +1,4 @@
-import { wantsJson } from "@/lib/wants-json";
+import { decodeHandleSegment, wantsJson } from "@/lib/wants-json";
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   if (!wantsJson(request.nextUrl, request.headers.get("accept"))) {
     return NextResponse.next();
   }
-  const handle = request.nextUrl.pathname.replace(/^\//, "");
+  const handle = decodeHandleSegment(request.nextUrl.pathname);
   if (!handle || handle.includes("/")) {
     return NextResponse.next();
   }
@@ -17,7 +17,9 @@ export function middleware(request: NextRequest) {
   url.pathname = "/api/resolve";
   url.search = "";
   url.searchParams.set("q", handle);
-  return NextResponse.rewrite(url);
+  const headers = new Headers(request.headers);
+  headers.set("x-atfindme-q", handle);
+  return NextResponse.rewrite(url, { request: { headers } });
 }
 
 export const config = {

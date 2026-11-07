@@ -1,3 +1,14 @@
+/** Decode a path or query handle (`andrew%40lunde` → `andrew@lunde`). */
+export function decodeHandleSegment(raw: string): string {
+  const trimmed = raw.replace(/^\//, "").trim();
+  if (!trimmed) return "";
+  try {
+    return decodeURIComponent(trimmed);
+  } catch {
+    return trimmed;
+  }
+}
+
 /** True when the client asked for JSON via ?format=json or Accept. */
 
 function qFor(accept: string, names: string[]): number {
